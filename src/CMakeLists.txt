@@ -81,6 +81,17 @@ endif()
 
 if(USE_SYSTEM_OPENSTA)
   if(NOT OPENSTA_LIBRARY)
+    find_package(Eigen3 REQUIRED)
+    include_directories("${EIGEN3_INCLUDE_DIR}")
+    message(STATUS "Eigen3: ${EIGEN3_INCLUDE_DIR}")
+
+	find_library(CUDD_LIB
+	  NAME cudd
+	  PATHS ${CUDD_DIR}
+	  PATH_SUFFIXES lib lib/cudd cudd/.libs
+	  )
+    message(STATUS "CUDD library: ${CUDD_LIB}")
+
     find_library(OPENSTA_LIBRARY NAMES OpenSTA
                  PATHS
                  /usr/lib
