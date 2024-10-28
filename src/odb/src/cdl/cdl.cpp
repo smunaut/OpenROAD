@@ -89,6 +89,7 @@ std::string getUnconnectedNet(dbBlock* block, int& unconnectedNets)
 std::string getNetName(dbBlock* block,
                        dbInst* inst,
                        dbMTerm* mterm,
+                       std::map<std::string, std::string>& net2pin,
                        int& unconnectedNets)
 {
   if (mterm == nullptr) {
@@ -105,7 +106,14 @@ std::string getNetName(dbBlock* block,
     return getUnconnectedNet(block, unconnectedNets);
   }
 
-  return net->getName();
+  std::string net_name = net->getName();
+
+  auto pin_name_match = net2pin.find(net_name);
+  if (pin_name_match != net2pin.end()) {
+    return pin_name_match->second;
+  }
+
+  return net_name;
 }
 
 // Look for .subckt lines and record the terminal order for module to
@@ -189,6 +197,7 @@ bool cdl::writeCdl(utl::Logger* logger,
   }
   int unconnectedNets = 0;
   utl::FileHandler fileHandler(outFileName);
+  std::map<std::string, std::string> net2pin;
   FILE* f = fileHandler.getFile();
 
   if (f == nullptr) {
@@ -204,6 +213,10 @@ bool cdl::writeCdl(utl::Logger* logger,
   std::string line = ".SUBCKT " + block->getName();
   for (auto&& pin : block->getBTerms()) {
     line += " " + pin->getName();
+    auto net = pin->getNet();
+    if ((net != nullptr) && (net->getName() != pin->getName())) {
+      net2pin.emplace(net->getName(), pin->getName());
+    }
   }
 
   writeLine(f, line);
@@ -231,7 +244,7 @@ bool cdl::writeCdl(utl::Logger* logger,
       }
     } else {
       for (auto&& mterm : it->second) {
-        line += " " + getNetName(block, inst, mterm, unconnectedNets);
+        line += " " + getNetName(block, inst, mterm, net2pin, unconnectedNets);
       }
     }
 
